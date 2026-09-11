@@ -9,7 +9,7 @@ interface MatrixRainBackgroundProps {
   enable3dParallax?: boolean;
 }
 
-interface DropColumn {
+interface DropStream {
   x: number;
   y: number;
   speed: number;
@@ -22,7 +22,7 @@ interface DropColumn {
 }
 
 export default function MatrixRainBackground({
-  opacity = 0.45,
+  opacity = 0.85,
   interactive = true,
   className = '',
   enable3dParallax = true
@@ -49,76 +49,76 @@ export default function MatrixRainBackground({
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
-    // Authentic Matrix glyph set (Katakana, Latin, Numbers, Symbols)
+    // Matrix characters: Katakana, Numbers, Latin and Tech Symbols
     const matrixChars =
-      'ｦｱｳｴｵｶｷｹｺｻｼｽｾｿﾀﾂﾃﾅﾆﾇﾈﾊﾋﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾜ1234567890ABCDEFXYZ@#$%&*+-=<>{}[]|^~';
+      'ｦｱｳｴｵｶｷｹｺｻｼｽｾｿﾀﾂﾃﾅﾆﾇﾈﾊﾋﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾜ1234567890ABCDEF01010101XYZ<>/[]{}#*+=_~|:;!?';
 
-    const getChar = () => matrixChars[Math.floor(Math.random() * matrixChars.length)];
+    const getRandomChar = () => matrixChars[Math.floor(Math.random() * matrixChars.length)];
 
-    // Initialize 3D Depth Columns (Multi-layer field)
-    let columns: DropColumn[] = [];
+    let streams: DropStream[] = [];
 
-    const initColumns = () => {
+    const initStreams = () => {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
-      columns = [];
+      streams = [];
 
-      // Density calculation
-      const baseSpacing = 16;
-      const colCount = Math.floor(width / baseSpacing);
+      const colSpacing = 20;
+      const totalColumns = Math.ceil(width / colSpacing);
 
-      for (let i = 0; i < colCount; i++) {
-        // Distribute layers: 15% Foreground, 50% Midground, 35% Background
+      for (let i = 0; i < totalColumns; i++) {
         const rand = Math.random();
         let layer: 'foreground' | 'midground' | 'background' = 'midground';
-        let fontSize = 14;
-        let speed = 1.4;
+        let fontSize = 16;
+        let speed = 2.2;
 
-        if (rand < 0.18) {
+        if (rand < 0.25) {
+          // Foreground: Closer, bigger, high brightness and speed
           layer = 'foreground';
-          fontSize = 17 + Math.random() * 3;
-          speed = 2.4 + Math.random() * 1.6;
-        } else if (rand > 0.65) {
+          fontSize = 19 + Math.random() * 4;
+          speed = 3.5 + Math.random() * 2.5;
+        } else if (rand > 0.68) {
+          // Background: Distant depth, smaller, darker green
           layer = 'background';
-          fontSize = 10 + Math.random() * 2;
-          speed = 0.7 + Math.random() * 0.6;
+          fontSize = 12 + Math.random() * 2;
+          speed = 1.2 + Math.random() * 0.8;
         } else {
+          // Midground: Core vibrant green
           layer = 'midground';
-          fontSize = 13 + Math.random() * 2;
-          speed = 1.2 + Math.random() * 0.9;
+          fontSize = 15 + Math.random() * 2;
+          speed = 2.0 + Math.random() * 1.4;
         }
 
-        const length = Math.floor(12 + Math.random() * 24);
+        const length = Math.floor(15 + Math.random() * 28);
         const chars: string[] = [];
         for (let j = 0; j < length; j++) {
-          chars.push(getChar());
+          chars.push(getRandomChar());
         }
 
-        columns.push({
-          x: i * baseSpacing + (Math.random() * 4 - 2),
+        streams.push({
+          x: i * colSpacing + (Math.random() * 6 - 3),
           y: Math.random() * -height * 1.5,
           speed,
           layer,
           fontSize,
           chars,
           lastMutation: 0,
-          mutationSpeed: 50 + Math.random() * 100,
+          mutationSpeed: 40 + Math.random() * 80,
           length
         });
       }
     };
 
-    initColumns();
+    initStreams();
 
     const handleResize = () => {
-      initColumns();
+      initStreams();
     };
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!interactive) return;
       const { innerWidth, innerHeight } = window;
-      mousePos.current.targetX = (e.clientX / innerWidth - 0.5) * 2; // -1 to 1
-      mousePos.current.targetY = (e.clientY / innerHeight - 0.5) * 2; // -1 to 1
+      mousePos.current.targetX = (e.clientX / innerWidth - 0.5) * 2;
+      mousePos.current.targetY = (e.clientY / innerHeight - 0.5) * 2;
     };
 
     window.addEventListener('resize', handleResize);
@@ -132,97 +132,97 @@ export default function MatrixRainBackground({
       const delta = Math.min((time - lastTime) / 1000, 0.1);
       lastTime = time;
 
-      // Smooth mouse interpolation for 3D depth parallax
-      mousePos.current.x += (mousePos.current.targetX - mousePos.current.x) * 0.05;
-      mousePos.current.y += (mousePos.current.targetY - mousePos.current.y) * 0.05;
+      // Parallax mouse damping
+      mousePos.current.x += (mousePos.current.targetX - mousePos.current.x) * 0.06;
+      mousePos.current.y += (mousePos.current.targetY - mousePos.current.y) * 0.06;
 
-      // Trail fade with deep dark hue matching theme (#070908)
-      ctx.fillStyle = 'rgba(7, 9, 8, 0.18)';
+      // Clear with soft alpha fade to create smooth trailing motion
+      ctx.fillStyle = 'rgba(7, 9, 8, 0.14)';
       ctx.fillRect(0, 0, width, height);
 
-      // Render columns sorted by layer for true 3D visual hierarchy (Background -> Midground -> Foreground)
-      for (let i = 0; i < columns.length; i++) {
-        const col = columns[i];
+      // Render Matrix Streams with 3D Depth
+      for (let i = 0; i < streams.length; i++) {
+        const stream = streams[i];
 
-        // Parallax horizontal & vertical displacement based on depth layer
-        let parallaxOffset = 0;
-        let layerGlow = 0;
-        let headColor = '#E2FFDF';
+        let parallaxShift = 0;
+        let glowSize = 0;
+        let headColor = '#FFFFFF';
         let bodyColor = '#57EF40';
         let tailColor = '#185820';
 
-        if (col.layer === 'foreground') {
-          parallaxOffset = mousePos.current.x * 24;
-          layerGlow = 8;
+        if (stream.layer === 'foreground') {
+          parallaxShift = mousePos.current.x * 28;
+          glowSize = 10;
           headColor = '#FFFFFF';
           bodyColor = '#65FF4D';
           tailColor = '#248A30';
-        } else if (col.layer === 'midground') {
-          parallaxOffset = mousePos.current.x * 12;
-          layerGlow = 3;
+        } else if (stream.layer === 'midground') {
+          parallaxShift = mousePos.current.x * 14;
+          glowSize = 5;
           headColor = '#E2FFDF';
           bodyColor = '#57EF40';
-          tailColor = '#12481B';
+          tailColor = '#166023';
         } else {
-          // Background depth
-          parallaxOffset = mousePos.current.x * 4;
-          layerGlow = 0;
-          headColor = '#9EEA92';
-          bodyColor = '#2B7A33';
-          tailColor = '#0B2610';
+          parallaxShift = mousePos.current.x * 6;
+          glowSize = 1;
+          headColor = '#B0FFAB';
+          bodyColor = '#3FAF32';
+          tailColor = '#0F3815';
         }
 
-        ctx.font = `bold ${col.fontSize}px "JetBrains Mono", "Courier New", monospace`;
+        ctx.font = `bold ${Math.round(stream.fontSize)}px "JetBrains Mono", Consolas, "Courier New", monospace`;
 
-        // Periodic glyph mutation for authentic Matrix flicker
-        if (time - col.lastMutation > col.mutationSpeed) {
-          const randomIndex = Math.floor(Math.random() * col.chars.length);
-          col.chars[randomIndex] = getChar();
-          col.lastMutation = time;
+        // Character mutation
+        if (time - stream.lastMutation > stream.mutationSpeed) {
+          const randIdx = Math.floor(Math.random() * stream.chars.length);
+          stream.chars[randIdx] = getRandomChar();
+          stream.lastMutation = time;
         }
 
-        // Draw character column stream
-        for (let j = 0; j < col.chars.length; j++) {
-          const charY = col.y - j * col.fontSize * 1.15;
-          const charX = col.x + parallaxOffset;
+        // Render each character in stream
+        for (let j = 0; j < stream.chars.length; j++) {
+          const charY = stream.y - j * (stream.fontSize * 1.15);
+          const charX = stream.x + parallaxShift;
 
-          if (charY < -col.fontSize || charY > height + col.fontSize) continue;
+          if (charY < -stream.fontSize || charY > height + stream.fontSize) continue;
 
-          // Head character (brightest / white glow)
+          // Head of the stream (Ultra bright white/cyan glow)
           if (j === 0) {
             ctx.shadowColor = '#57EF40';
-            ctx.shadowBlur = layerGlow + 4;
+            ctx.shadowBlur = glowSize + 8;
             ctx.fillStyle = headColor;
+            ctx.globalAlpha = 1.0;
           } else if (j < 3) {
-            // High intensity body
+            // High luminescence body
             ctx.shadowColor = '#57EF40';
-            ctx.shadowBlur = layerGlow;
+            ctx.shadowBlur = glowSize;
             ctx.fillStyle = bodyColor;
+            ctx.globalAlpha = 0.95;
           } else {
-            // Fading tail
+            // Smooth gradient tail
             ctx.shadowBlur = 0;
-            const fade = 1 - j / col.chars.length;
+            const progress = 1 - j / stream.chars.length;
             ctx.fillStyle = j % 2 === 0 ? bodyColor : tailColor;
-            ctx.globalAlpha = Math.max(fade * 0.85, 0.15);
+            ctx.globalAlpha = Math.max(progress * 0.9, 0.18);
           }
 
-          ctx.fillText(col.chars[j], charX, charY);
-          ctx.globalAlpha = 1.0;
+          ctx.fillText(stream.chars[j], charX, charY);
           ctx.shadowBlur = 0;
+          ctx.globalAlpha = 1.0;
         }
 
-        // Move drop down
-        col.y += col.speed * 60 * delta;
+        // Advance stream downwards
+        stream.y += stream.speed * 60 * delta;
 
-        // Reset drop to top with randomized delay once off-screen
-        if (col.y - col.length * col.fontSize * 1.15 > height) {
-          col.y = -Math.random() * 120 - 20;
-          col.speed =
-            col.layer === 'foreground'
-              ? 2.4 + Math.random() * 1.6
-              : col.layer === 'background'
-              ? 0.7 + Math.random() * 0.6
-              : 1.2 + Math.random() * 0.9;
+        // Reset stream when fully past bottom of screen
+        if (stream.y - stream.length * (stream.fontSize * 1.15) > height) {
+          stream.y = -Math.random() * 100 - 20;
+          stream.speed =
+            stream.layer === 'foreground'
+              ? 3.5 + Math.random() * 2.5
+              : stream.layer === 'background'
+              ? 1.2 + Math.random() * 0.8
+              : 2.0 + Math.random() * 1.4;
         }
       }
 
@@ -244,33 +244,26 @@ export default function MatrixRainBackground({
     <div
       ref={containerRef}
       aria-hidden="true"
-      className={`fixed inset-0 pointer-events-none z-0 overflow-hidden select-none transition-opacity duration-1000 ${
+      className={`fixed inset-0 pointer-events-none z-0 overflow-hidden select-none transition-opacity duration-700 ${
         mounted ? 'opacity-100' : 'opacity-0'
       } ${className}`}
-      style={{
-        perspective: enable3dParallax ? '1200px' : 'none'
-      }}
     >
-      {/* 3D Canvas Layer with Subtle Spatial Tilt */}
+      {/* 3D Canvas Layer */}
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full block"
         style={{
           opacity,
-          transform: enable3dParallax ? 'scale(1.05) translateZ(0)' : 'none',
+          transform: enable3dParallax ? 'scale(1.04)' : 'none',
           willChange: 'transform, opacity'
         }}
       />
 
-      {/* Layered Optical Vignette & Gradients for Crystal-Clear Text Readability (Visual Hierarchy) */}
-      {/* 1. Deep radial center vignette to soft-focus hero and main interactive cards */}
-      <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#070908]/60 to-[#070908] pointer-events-none" />
+      {/* Atmospheric Top Green Glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[350px] bg-radial-gradient from-[#57EF40]/15 via-transparent to-transparent blur-3xl pointer-events-none" />
 
-      {/* 2. Top-to-bottom atmospheric linear gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#070908]/90 via-transparent to-[#070908] pointer-events-none" />
-
-      {/* 3. Subtle Matrix Neo-Green Top Horizon Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[400px] bg-radial-gradient from-[#57EF40]/15 via-[#57EF40]/5 to-transparent blur-3xl pointer-events-none" />
+      {/* Soft Vignette Mask to maintain executive readability */}
+      <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#070908]/30 to-[#070908]/85 pointer-events-none" />
     </div>
   );
 }

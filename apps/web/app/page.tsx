@@ -120,7 +120,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#070908] text-[#F2F5F3] selection:bg-[#57EF40]/20 selection:text-[#57EF40] relative overflow-hidden font-sans">
       {/* 3D Matrix Digital Rain & Atmosphere Layer */}
-      <MatrixRainBackground opacity={0.38} interactive={true} enable3dParallax={true} />
+      <MatrixRainBackground opacity={0.85} interactive={true} enable3dParallax={true} />
       <div className="absolute inset-0 bg-tech-grid opacity-10 pointer-events-none" />
 
       {/* ========================================================================= */}
