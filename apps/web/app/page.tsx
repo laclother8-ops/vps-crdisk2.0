@@ -25,6 +25,7 @@ import {
   Play,
   Volume2
 } from 'lucide-react';
+import MatrixRainBackground from '@/components/ui/MatrixRainBackground';
 
 export default function LandingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
@@ -118,9 +119,9 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#070908] text-[#F2F5F3] selection:bg-[#57EF40]/20 selection:text-[#57EF40] relative overflow-hidden font-sans">
-      {/* Background Subtle Tech Grids & Radial Lights */}
-      <div className="absolute inset-0 bg-tech-grid opacity-20 pointer-events-none" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[550px] bg-radial-gradient from-[#57EF40]/10 via-[#070908]/0 to-transparent blur-3xl pointer-events-none" />
+      {/* 3D Matrix Digital Rain & Atmosphere Layer */}
+      <MatrixRainBackground opacity={0.38} interactive={true} enable3dParallax={true} />
+      <div className="absolute inset-0 bg-tech-grid opacity-10 pointer-events-none" />
 
       {/* ========================================================================= */}
       {/* 1. EXECUTIVE NAVBAR */}
