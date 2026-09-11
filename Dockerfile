@@ -45,6 +45,7 @@ RUN npx prisma generate --schema=./prisma/schema.prisma || true
 # Build monorepo packages and Next.js standalone web application
 RUN pnpm --filter @omnicrm/shared build || true
 RUN pnpm --filter @omnicrm/web build
+RUN mkdir -p /app/apps/web/public /app/apps/web/.next/static
 
 # Stage 4: Ultra-light Production Runtime Container
 FROM node:20-alpine AS runner
