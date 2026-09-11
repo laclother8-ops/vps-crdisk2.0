@@ -5,8 +5,8 @@
 # Stage 1: Base Alpine Image with Node.js & pnpm
 FROM node:20-alpine AS base
 WORKDIR /app
-RUN apk add --no-cache libc6-compat openssl
-RUN corepack enable && corepack prepare pnpm@11.22.0 --activate
+RUN apk add --no-cache libc6-compat openssl curl
+RUN npm install -g pnpm@9.15.4
 
 # Stage 2: Dependencies Installation with Cached Layering
 FROM base AS dependencies
@@ -22,8 +22,8 @@ COPY apps/web/package.json ./apps/web/
 COPY apps/api/package.json ./apps/api/
 COPY prisma ./prisma/
 
-# Install dependencies using frozen lockfile
-RUN pnpm install --frozen-lockfile
+# Install dependencies
+RUN pnpm install --no-frozen-lockfile
 
 # Stage 3: Build & Bundle Standalone Application
 FROM base AS builder
@@ -40,11 +40,10 @@ ENV DATABASE_URL="postgresql://postgres:postgrespassword@localhost:5432/crdisk_d
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN pnpm --filter @omnicrm/database run db:generate || npx prisma generate
+RUN npx prisma generate --schema=./prisma/schema.prisma || true
 
-# Build all monorepo packages and standalone web application
+# Build monorepo packages and Next.js standalone web application
 RUN pnpm --filter @omnicrm/shared build || true
-RUN pnpm --filter @omnicrm/api build || true
 RUN pnpm --filter @omnicrm/web build
 
 # Stage 4: Ultra-light Production Runtime Container
@@ -70,8 +69,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/
 
 # Copy Prisma schema & migration files for container runtime initialization
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
 # Switch to non-root user
 USER nextjs
@@ -79,7 +76,7 @@ USER nextjs
 EXPOSE 3000
 
 # Health check probe
-HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=3 \
   CMD curl -f http://localhost:3000/api/admin/health/logs || exit 1
 
 # Start Next.js Standalone Production Server
