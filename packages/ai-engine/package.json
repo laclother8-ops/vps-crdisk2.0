@@ -1,0 +1,20 @@
+{
+  "name": "@omnicrm/ai-engine",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@omnicrm/shared": "workspace:*",
+    "openai": "^4.51.0",
+    "@anthropic-ai/sdk": "^0.24.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  }
+}

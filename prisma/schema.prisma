@@ -1,0 +1,159 @@
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+// 1. Workspace / Tenant
+model Workspace {
+  id            String          @id @default(uuid())
+  name          String          @db.VarChar(120)
+  slug          String          @unique @db.VarChar(120)
+  plan          String          @default("enterprise") @db.VarChar(30) // 'starter', 'pro', 'enterprise'
+  status        String          @default("active") @db.VarChar(30)     // 'active', 'suspended'
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  // Relacionamentos Multi-tenant
+  users         User[]
+  leads         Lead[]
+  calls         Call[]
+  messages      Message[]
+  followUpJobs  FollowUpJob[]
+  knowledgeBase KnowledgeBase[]
+
+  @@map("workspaces")
+}
+
+// 2. Usuário com RBAC
+model User {
+  id           String     @id @default(uuid())
+  workspaceId  String?    @map("workspace_id") // Opcional apenas para Superadmin global
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name         String     @db.VarChar(100)
+  email        String     @unique @db.VarChar(120)
+  passwordHash String     @map("password_hash") @db.Text
+  role         String     @default("operator") @db.VarChar(30) // 'superadmin', 'workspace_admin', 'operator'
+  sipExtension String?    @map("sip_extension") @db.VarChar(20)
+  status       String     @default("active") @db.VarChar(20)   // 'active', 'inactive'
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  assignedLeads Lead[]    @relation("AssignedLeads")
+  calls         Call[]    @relation("AgentCalls")
+
+  @@index([workspaceId])
+  @@map("users")
+}
+
+// 3. Lead do CRM & Funil
+model Lead {
+  id             String        @id @default(uuid())
+  workspaceId    String        @map("workspace_id")
+  workspace      Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name           String        @db.VarChar(120)
+  phone          String        @db.VarChar(30)
+  email          String?       @db.VarChar(120)
+  company        String?       @db.VarChar(120)
+  status         String        @default("nao_contatado") @db.VarChar(40) // 'nao_contatado', 'contatado', 'em_atendimento_humano', 'interessado', 'nao_interessado', 'cliente'
+  funnelStage    String        @default("novo_lead") @map("funnel_stage") @db.VarChar(40) // 'novo_lead', 'qualificacao', 'apresentacao', 'proposta', 'fechado_ganho', 'perdido'
+  lastCallStatus String?       @map("last_call_status") @db.VarChar(40)  // 'atendida', 'ocupado', 'caixa_postal', 'falha'
+  optOut         Boolean       @default(false) @map("opt_out")
+  assignedToId   String?       @map("assigned_to_id")
+  assignedTo     User?         @relation("AssignedLeads", fields: [assignedToId], references: [id], onDelete: SetNull)
+  tags           String[]      @default([])
+  score          Int           @default(10)
+  dealValue      Float         @default(0.0) @map("deal_value")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  calls          Call[]
+  messages       Message[]
+  followUpJobs   FollowUpJob[]
+
+  @@index([workspaceId])
+  @@index([phone])
+  @@map("leads")
+}
+
+// 4. Chamadas Telefônicas (WebRTC / SIP / Twilio)
+model Call {
+  id           String    @id @default(uuid())
+  workspaceId  String    @map("workspace_id")
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leadId       String    @map("lead_id")
+  lead         Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  agentId      String?   @map("agent_id")
+  agent        User?     @relation("AgentCalls", fields: [agentId], references: [id], onDelete: SetNull)
+  duration     Int       @default(0) // Duração em segundos
+  status       String    @db.VarChar(30) // 'answered', 'busy', 'no_answer', 'failed' (ou 'atendida', 'ocupado', 'caixa_postal', 'falha')
+  recordingUrl String?   @map("recording_url") @db.Text
+  notes        String?   @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@index([workspaceId])
+  @@index([leadId])
+  @@map("calls")
+}
+
+// 5. Mensagens Multicanal (WhatsApp Cloud API / Chat Live)
+model Message {
+  id          String    @id @default(uuid())
+  workspaceId String    @map("workspace_id")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leadId      String    @map("lead_id")
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  sender      String    @db.VarChar(20) // 'lead', 'ai', 'human'
+  channel     String    @default("whatsapp") @db.VarChar(30) // 'whatsapp', 'chat_live'
+  content     String    @db.Text
+  type        String    @default("text") @db.VarChar(20) // 'text', 'audio', 'image', 'document'
+  mediaUrl    String?   @map("media_url") @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([workspaceId])
+  @@index([leadId])
+  @@map("messages")
+}
+
+// 6. Fila de Follow-up Inteligente (Jobs orientados a eventos)
+model FollowUpJob {
+  id           String    @id @default(uuid())
+  workspaceId  String    @map("workspace_id")
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leadId       String    @map("lead_id")
+  lead         Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  triggerType  String    @map("trigger_type") @db.VarChar(50) // 'DISPOSITION_NAO_ATENDEU', 'DISPOSITION_OCUPADO', 'STAGE_PROPOSTA', 'MANUAL'
+  scheduledFor DateTime  @map("scheduled_for")
+  status       String    @default("pending") @db.VarChar(30) // 'pending', 'completed', 'cancelled'
+  step         Int       @default(1)
+  lastError    String?   @map("last_error") @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([workspaceId])
+  @@index([scheduledFor, status])
+  @@map("followup_jobs")
+}
+
+// 7. Base de Conhecimento RAG com pgvector (Embeddings 1536 dimensões)
+model KnowledgeBase {
+  id          String                   @id @default(uuid())
+  workspaceId String                   @map("workspace_id")
+  workspace   Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  title       String                   @db.VarChar(200)
+  content     String                   @db.Text
+  category    String                   @default("geral") @db.VarChar(50)
+  vector      Unsupported("vector(1536)")?
+  createdAt   DateTime                 @default(now()) @map("created_at")
+  updatedAt   DateTime                 @updatedAt @map("updated_at")
+
+  @@index([workspaceId])
+  @@map("knowledge_base")
+}

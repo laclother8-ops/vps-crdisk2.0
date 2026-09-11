@@ -1,0 +1,21 @@
+{
+  "name": "@omnicrm/database",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "build": "prisma generate && tsc"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@omnicrm/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "prisma": "^5.22.0",
+    "typescript": "^5.4.5"
+  }
+}
