@@ -13,7 +13,10 @@ import {
   Zap,
   Users,
   Crown,
-  Building2
+  Building2,
+  ShoppingCart,
+  Package,
+  RefreshCw
 } from 'lucide-react';
 
 export function Sidebar() {
@@ -28,15 +31,19 @@ export function Sidebar() {
   }, []);
 
   const isSuperAdmin = userRole === 'superadmin' || userRole === 'adm';
-  const isOperator = userRole === 'operator';
+  const isOwnerOrAdmin = userRole === 'OWNER' || userRole === 'ADMIN' || isSuperAdmin;
+  const isOperator = userRole === 'operator' || userRole === 'SALES_REP' || userRole === 'STOCK_OPERATOR';
 
   const navItems = [
     { label: 'Visão Geral', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Funil de Vendas', href: '/crm', icon: Kanban },
+    { label: 'Esteira de Pedidos', href: '/orders', icon: ShoppingCart },
+    { label: 'Controle de Estoque', href: '/inventory', icon: Package },
+    { label: 'Recorrência & Inatividade', href: '/customers/recurrence', icon: RefreshCw },
     { label: 'Central de Mensagens', href: '/chat', icon: MessageSquare },
     { label: 'Central de Ligações', href: '/dialer', icon: PhoneCall },
     { label: 'Assistente Virtual de Vendas', href: '/ai-agents', icon: Bot },
-    ...(!isOperator ? [{ label: 'Gestão de Equipe', href: '/settings/team', icon: Users }] : []),
+    ...(isOwnerOrAdmin ? [{ label: 'Gestão de Equipe', href: '/settings/team', icon: Users }] : []),
     ...(!isOperator ? [{ label: 'Configurações', href: '/settings', icon: Settings }] : []),
     ...(isSuperAdmin ? [
       { label: 'Painel Super Admin', href: '/admin', icon: Crown, highlight: true },

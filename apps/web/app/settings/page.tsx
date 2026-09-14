@@ -23,14 +23,15 @@ import {
   Eye,
   EyeOff,
   Sliders,
-  Users
+  Users,
+  Building2
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { Button } from '../../components/ui/Button';
 import { TeamManagement } from '../../components/settings/TeamManagement';
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'whatsapp' | 'ai' | 'rag' | 'telephony' | 'team'>('whatsapp');
+  const [activeTab, setActiveTab] = useState<'whatsapp' | 'ai' | 'rag' | 'telephony' | 'team' | 'conta-azul'>('whatsapp');
   const [copied, setCopied] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -43,6 +44,16 @@ export default function SettingsPage() {
   const [showWaToken, setShowWaToken] = useState(false);
   const [waTesting, setWaTesting] = useState(false);
   const [waTestResult, setWaTestResult] = useState<any>(null);
+
+  // Conta Azul State
+  const [caClientId, setCaClientId] = useState('');
+  const [caClientSecret, setCaClientSecret] = useState('');
+  const [caRedirectUri, setCaRedirectUri] = useState('');
+  const [caIsEnabled, setCaIsEnabled] = useState(false);
+  const [caHasToken, setCaHasToken] = useState(false);
+  const [showCaSecret, setShowCaSecret] = useState(false);
+  const [caTesting, setCaTesting] = useState(false);
+  const [caTestResult, setCaTestResult] = useState<any>(null);
 
   // AI State
   const [openaiKey, setOpenaiKey] = useState('sk-proj-••••••••••••••••••••••••••••••••••••••••••••••••');
@@ -75,10 +86,25 @@ export default function SettingsPage() {
   const webhookUrl = 'http://localhost:4000/api/webhooks/whatsapp';
   const telephonyWebhook = 'http://localhost:4000/api/telephony/webhooks/twilio';
 
+  const [userRole, setUserRole] = useState<string>('superadmin');
+
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const role = localStorage.getItem('crdisk_user_role') || 'superadmin';
+      setUserRole(role);
+    }
     loadSettings();
     loadKnowledgeBase();
   }, []);
+
+  const isOwnerOrAdmin = userRole === 'OWNER' || userRole === 'ADMIN' || userRole === 'superadmin' || userRole === 'adm' || userRole === 'admin';
+
+  // Fallback if role is not allowed on current activeTab
+  useEffect(() => {
+    if (!isOwnerOrAdmin && (activeTab === 'team' || activeTab === 'conta-azul')) {
+      setActiveTab('whatsapp');
+    }
+  }, [isOwnerOrAdmin, activeTab]);
 
   const loadSettings = async () => {
     try {
@@ -98,6 +124,20 @@ export default function SettingsPage() {
           setTwilioCallerId(data.telephony.defaultCallerId || '+5511999999999');
           setSipServer(data.telephony.sipServer || 'sip.crdisk.telecom.br');
         }
+      }
+
+      // Load Conta Azul Settings
+      try {
+        const ca = await api.getContaAzulConfig();
+        if (ca) {
+          setCaClientId(ca.clientId || '');
+          setCaClientSecret(ca.clientSecret || '');
+          setCaRedirectUri(ca.redirectUri || (typeof window !== 'undefined' ? `${window.location.origin}/api/settings/integrations/conta-azul/callback` : ''));
+          setCaIsEnabled(ca.isEnabled || false);
+          setCaHasToken(ca.hasToken || false);
+        }
+      } catch (e) {
+        // optional fallback
       }
     } catch (e) {
       console.warn('Using default settings fallback');
@@ -147,6 +187,15 @@ export default function SettingsPage() {
           status: 'connected'
         }
       });
+
+      // Save Conta Azul config
+      await api.saveContaAzulConfig({
+        clientId: caClientId,
+        clientSecret: caClientSecret,
+        redirectUri: caRedirectUri,
+        isEnabled: caIsEnabled
+      });
+
       setFeedback({ type: 'success', message: 'Configurações do CRDISK salvas com sucesso!' });
       setTimeout(() => setFeedback(null), 4000);
     } catch (err: any) {
@@ -154,6 +203,28 @@ export default function SettingsPage() {
       setTimeout(() => setFeedback(null), 4000);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleTestContaAzul = async () => {
+    setCaTesting(true);
+    setCaTestResult(null);
+    try {
+      const res = await api.testContaAzulConnection({
+        clientId: caClientId,
+        clientSecret: caClientSecret
+      });
+      setCaTestResult({
+        success: res.connected ?? true,
+        message: res.message || 'Conexão com Conta Azul validada com sucesso!'
+      });
+    } catch (err: any) {
+      setCaTestResult({
+        success: false,
+        message: `Falha: ${err.message}`
+      });
+    } finally {
+      setCaTesting(false);
     }
   };
 
@@ -302,17 +373,33 @@ export default function SettingsPage() {
           <span>Telefonia e Ramais</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab('team')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-            activeTab === 'team'
-              ? 'bg-[#18201C] text-white border border-[#222924] font-bold'
-              : 'text-muted-foreground hover:text-foreground hover:bg-[#141815] border border-transparent'
-          }`}
-        >
-          <Users className="w-4 h-4 text-[#57EF40]" />
-          <span>Gestão da Empresa e Equipe</span>
-        </button>
+        {isOwnerOrAdmin && (
+          <button
+            onClick={() => setActiveTab('team')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+              activeTab === 'team'
+                ? 'bg-[#18201C] text-white border border-[#222924] font-bold'
+                : 'text-muted-foreground hover:text-foreground hover:bg-[#141815] border border-transparent'
+            }`}
+          >
+            <Users className="w-4 h-4 text-[#57EF40]" />
+            <span>Gestão da Empresa e Equipe</span>
+          </button>
+        )}
+
+        {isOwnerOrAdmin && (
+          <button
+            onClick={() => setActiveTab('conta-azul')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+              activeTab === 'conta-azul'
+                ? 'bg-[#18201C] text-white border border-[#222924] font-bold'
+                : 'text-muted-foreground hover:text-foreground hover:bg-[#141815] border border-transparent'
+            }`}
+          >
+            <Building2 className="w-4 h-4 text-[#57EF40]" />
+            <span>Conta Azul (ERP)</span>
+          </button>
+        )}
       </div>
 
       {/* Tab 1: WhatsApp Cloud API */}
@@ -802,6 +889,107 @@ export default function SettingsPage() {
       {/* Tab 5: Team Management (RBAC) */}
       {activeTab === 'team' && (
         <TeamManagement />
+      )}
+
+      {/* Tab 6: Conta Azul ERP Integration */}
+      {activeTab === 'conta-azul' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="p-6 rounded-3xl glass-elevated border border-border space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-foreground">Integração Oficial Conta Azul (REST API v1)</h3>
+                  <span className="text-[11px] text-muted-foreground">Sincronização de clientes, pedidos de venda faturados e contas a receber</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer bg-surface border border-border px-3 py-1.5 rounded-xl text-xs">
+                  <input
+                    type="checkbox"
+                    checked={caIsEnabled}
+                    onChange={(e) => setCaIsEnabled(e.target.checked)}
+                    className="rounded border-border text-primary focus:ring-0"
+                  />
+                  <span className="font-bold text-foreground">Habilitar Integração</span>
+                </label>
+
+                <Button 
+                  onClick={handleTestContaAzul} 
+                  disabled={caTesting || !caClientId} 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2 text-xs border-border"
+                >
+                  {caTesting ? <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" /> : <Zap className="w-3.5 h-3.5 text-primary" />}
+                  <span>{caTesting ? 'Testando...' : 'Testar Conexão'}</span>
+                </Button>
+              </div>
+            </div>
+
+            {caTestResult && (
+              <div className={`p-4 rounded-2xl text-xs font-mono flex items-start gap-2.5 animate-fade-in ${
+                caTestResult.success ? 'bg-primary/10 border border-primary/30 text-primary' : 'bg-rose-500/10 border border-rose-500/30 text-rose-400'
+              }`}>
+                {caTestResult.success ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
+                <span>{caTestResult.message}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label className="text-muted-foreground block mb-1 font-bold">Client ID *</label>
+                <input
+                  type="text"
+                  value={caClientId}
+                  onChange={(e) => setCaClientId(e.target.value)}
+                  className="w-full bg-surface border border-border focus:border-primary rounded-xl px-3 py-2.5 font-mono text-xs text-foreground outline-none"
+                  placeholder="Ex: c1a2b3c4-5d6e-7f8g-9h0i..."
+                />
+              </div>
+
+              <div>
+                <label className="text-muted-foreground block mb-1 font-bold">Client Secret *</label>
+                <div className="relative">
+                  <input
+                    type={showCaSecret ? 'text' : 'password'}
+                    value={caClientSecret}
+                    onChange={(e) => setCaClientSecret(e.target.value)}
+                    className="w-full bg-surface border border-border focus:border-primary rounded-xl px-3 py-2.5 pr-10 font-mono text-xs text-foreground outline-none"
+                    placeholder="••••••••••••••••••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCaSecret(!showCaSecret)}
+                    className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
+                  >
+                    {showCaSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-muted-foreground block mb-1 text-xs font-bold">URL de Redirecionamento OAuth (Redirect URI)</label>
+              <div className="flex items-center gap-2 bg-surface border border-border rounded-xl p-2.5 font-mono text-[11px] text-foreground">
+                <span className="truncate flex-1">{caRedirectUri || 'https://crdisk.salessant.com.br/api/settings/integrations/conta-azul/callback'}</span>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(caRedirectUri || 'https://crdisk.salessant.com.br/api/settings/integrations/conta-azul/callback', 'ca_redirect')}
+                  className="text-muted-foreground hover:text-primary p-1"
+                >
+                  {copied === 'ca_redirect' ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Copie e cole esta mesma URL no portal de desenvolvedor do Conta Azul no cadastro do seu aplicativo.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

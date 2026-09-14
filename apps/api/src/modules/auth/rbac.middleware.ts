@@ -53,8 +53,8 @@ export async function authenticate(req: FastifyRequest, reply: FastifyReply) {
       role: 'operator',
       workspaceId: workspaceHeader || '11111111-1111-1111-1111-111111111111'
     };
-  } else if (roleHeader === 'workspace_admin') {
-    user.role = 'workspace_admin';
+  } else if (roleHeader) {
+    user.role = roleHeader as any;
   }
 
   req.user = user;

@@ -1,11 +1,32 @@
 export enum UserRole {
+  OWNER = 'OWNER',
+  ADMIN = 'ADMIN',
+  SALES_REP = 'SALES_REP',
+  STOCK_OPERATOR = 'STOCK_OPERATOR',
+  FINANCIAL = 'FINANCIAL',
+  // Aliases & Backwards-compatibility
   SUPERADMIN = 'superadmin',
   WORKSPACE_ADMIN = 'workspace_admin',
   OPERATOR = 'operator',
-  // Aliases
-  ADMIN = 'workspace_admin',
   AGENT = 'operator'
 }
+
+export const USER_ROLE_LABELS: Record<string, string> = {
+  OWNER: 'Proprietário',
+  ADMIN: 'Administrador',
+  SALES_REP: 'Vendas & SDR',
+  STOCK_OPERATOR: 'Operador de Estoque',
+  FINANCIAL: 'Financeiro',
+  superadmin: 'Superadmin',
+  workspace_admin: 'Administrador',
+  operator: 'Operador'
+};
+
+export const PLAN_USER_LIMITS: Record<string, number> = {
+  starter: 1,
+  pro: 3,
+  enterprise: 999999
+};
 
 export enum WorkspaceStatus {
   ACTIVE = 'active',

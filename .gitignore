@@ -27,3 +27,4 @@ pnpm-debug.log*
 *.sqlite
 .DS_Store
 Thumbs.db
+*.tsbuildinfo

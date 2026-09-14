@@ -33,7 +33,20 @@ export interface User {
   role: string | UserRole;
   sipExtension?: string | null;
   status: string;
+  isActive?: boolean;
   createdAt: Date;
+}
+
+export interface WorkspaceInvite {
+  id: string;
+  workspaceId: string;
+  email: string;
+  name?: string | null;
+  role: string | UserRole;
+  token: string;
+  expiresAt: Date | string;
+  createdAt: Date | string;
+  acceptedAt?: Date | string | null;
 }
 
 export interface Lead {
@@ -127,18 +140,31 @@ export const CreateTeamUserSchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório'),
   email: z.string().email('E-mail inválido'),
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
-  role: z.enum(['workspace_admin', 'operator', 'superadmin']).default('operator'),
+  role: z.string().default('SALES_REP'),
   sipExtension: z.string().optional().nullable()
 });
 
 export const UpdateTeamUserSchema = z.object({
   name: z.string().optional(),
   email: z.string().email().optional(),
-  role: z.enum(['workspace_admin', 'operator', 'superadmin']).optional(),
+  role: z.string().optional(),
   status: z.string().optional(),
+  isActive: z.boolean().optional(),
   sipExtension: z.string().optional().nullable()
 });
 
 export const ResetPasswordSchema = z.object({
   newPassword: z.string().min(6, 'A nova senha deve ter no mínimo 6 caracteres')
 });
+
+export const InviteMemberSchema = z.object({
+  email: z.string().email('E-mail corporativo inválido'),
+  name: z.string().optional().nullable(),
+  role: z.string().default('SALES_REP')
+});
+
+export const AcceptInviteSchema = z.object({
+  name: z.string().min(2, 'Nome completo é obrigatório'),
+  password: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres')
+});
+

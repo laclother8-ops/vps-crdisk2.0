@@ -11,6 +11,10 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { settingsRoutes } from './modules/settings/settings.routes.js';
 import { workspaceRoutes } from './modules/workspaces/workspace.routes.js';
 import { teamRoutes } from './modules/team/team.routes.js';
+import { orderRoutes } from './modules/orders/order.routes.js';
+import { inventoryRoutes } from './modules/inventory/inventory.routes.js';
+import { churnRoutes } from './modules/churn/churn.routes.js';
+import { contaAzulRoutes } from './modules/integrations/conta-azul.routes.js';
 
 const app = fastify({
   logger: {
@@ -130,6 +134,10 @@ async function bootstrap() {
   await app.register(settingsRoutes, { prefix: '/api/settings' });
   await app.register(workspaceRoutes, { prefix: '/api/admin/workspaces' });
   await app.register(teamRoutes, { prefix: '/api/team' });
+  await app.register(orderRoutes, { prefix: '/api/orders' });
+  await app.register(inventoryRoutes, { prefix: '/api/inventory' });
+  await app.register(churnRoutes, { prefix: '/api/churn' });
+  await app.register(contaAzulRoutes, { prefix: '/api/settings/integrations' });
   const { billingRoutes } = await import('./modules/billing/billing.routes.js');
   await app.register(billingRoutes, { prefix: '/api/billing' });
 

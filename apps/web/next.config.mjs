@@ -9,6 +9,14 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true
   },
+  async rewrites() {
+    return [
+      {
+        source: '/app/:path*',
+        destination: '/:path*'
+      }
+    ];
+  },
   async headers() {
     return [
       {

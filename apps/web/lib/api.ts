@@ -183,12 +183,24 @@ export const api = {
   getTeamMembers: () => fetcher('/api/team/users'),
   createTeamMember: (data: { name: string; email: string; password: string; role: string }) =>
     fetcher('/api/team/users', { method: 'POST', body: JSON.stringify(data) }),
-  updateTeamMember: (id: string, data: { name?: string; role?: string }) =>
-    fetcher(`/api/team/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  inviteTeamMember: (data: { email: string; name?: string; role: string }) =>
+    fetcher('/api/team/invite', { method: 'POST', body: JSON.stringify(data) }),
+  getPendingInvites: () => fetcher('/api/team/invites'),
+  resendInvite: (id: string) => fetcher(`/api/team/invites/${id}/resend`, { method: 'POST' }),
+  cancelInvite: (id: string) => fetcher(`/api/team/invites/${id}`, { method: 'DELETE' }),
+  toggleUserStatus: (id: string, isActive: boolean) =>
+    fetcher(`/api/team/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ isActive }) }),
+  updateUserRole: (id: string, role: string) =>
+    fetcher(`/api/team/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
+  reassignUserClients: (fromUserId: string, toUserId: string) =>
+    fetcher(`/api/team/users/${fromUserId}/reassign`, { method: 'POST', body: JSON.stringify({ toUserId }) }),
   resetTeamMemberPassword: (id: string, newPassword: string) =>
     fetcher(`/api/team/users/${id}/reset-password`, { method: 'POST', body: JSON.stringify({ newPassword }) }),
   deleteTeamMember: (id: string) =>
     fetcher(`/api/team/users/${id}`, { method: 'DELETE' }),
+  getPublicInvite: (token: string) => fetcher(`/api/team/public/invite/${token}`),
+  acceptPublicInvite: (token: string, data: { name: string; password?: string }) =>
+    fetcher(`/api/team/public/invite/${token}/accept`, { method: 'POST', body: JSON.stringify(data) }),
 
   // Super Admin Workspace Management (Superadmin role only)
   getWorkspaces: (params?: { page?: number; limit?: number; search?: string; status?: string }) => {
@@ -209,5 +221,59 @@ export const api = {
   updateWorkspaceSubscription: (id: string, data: { subscriptionStatus?: string; subscriptionPlan?: string; trialEndsAt?: string | null; currentPeriodEnd?: string | null }) =>
     fetcher(`/api/admin/workspaces/${id}/subscription`, { method: 'PATCH', body: JSON.stringify(data) }),
   impersonateWorkspace: (id: string) =>
-    fetcher(`/api/admin/workspaces/${id}/impersonate`, { method: 'POST' })
+    fetcher(`/api/admin/workspaces/${id}/impersonate`, { method: 'POST' }),
+
+  // Orders & Sales Pipeline
+  getOrders: (params?: { status?: string; search?: string; leadId?: string; from?: string; to?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append('status', params.status);
+    if (params?.search) query.append('search', params.search);
+    if (params?.leadId) query.append('leadId', params.leadId);
+    if (params?.from) query.append('from', params.from);
+    if (params?.to) query.append('to', params.to);
+    const qs = query.toString();
+    return fetcher(qs ? `/api/orders?${qs}` : '/api/orders');
+  },
+  getOrderById: (id: string) => fetcher(`/api/orders/${id}`),
+  createOrder: (data: any) => fetcher('/api/orders', { method: 'POST', body: JSON.stringify(data) }),
+  updateOrderStatus: (id: string, status: string) =>
+    fetcher(`/api/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  updateOrderDeliveryDate: (id: string, deliveryDate: string | null) =>
+    fetcher(`/api/orders/${id}/delivery-date`, { method: 'PATCH', body: JSON.stringify({ deliveryDate }) }),
+  syncContaAzulOrder: (id: string) =>
+    fetcher(`/api/orders/${id}/sync-conta-azul`, { method: 'POST' }),
+
+  // Inventory & Products
+  getProducts: (params?: { search?: string; category?: string; activeOnly?: boolean }) => {
+    const query = new URLSearchParams();
+    if (params?.search) query.append('search', params.search);
+    if (params?.category) query.append('category', params.category);
+    if (params?.activeOnly) query.append('activeOnly', 'true');
+    const qs = query.toString();
+    return fetcher(qs ? `/api/inventory/products?${qs}` : '/api/inventory/products');
+  },
+  createProduct: (data: any) =>
+    fetcher('/api/inventory/products', { method: 'POST', body: JSON.stringify(data) }),
+  recordStockMovement: (data: any) =>
+    fetcher('/api/inventory/movements', { method: 'POST', body: JSON.stringify(data) }),
+  getStockMovements: (params?: { productId?: string; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.productId) query.append('productId', params.productId);
+    if (params?.limit) query.append('limit', params.limit.toString());
+    const qs = query.toString();
+    return fetcher(qs ? `/api/inventory/movements?${qs}` : '/api/inventory/movements');
+  },
+
+  // Recurrence & Churn Engine
+  getChurnAlerts: () => fetcher('/api/churn/alerts'),
+  generateReactivationPrompt: (leadId: string) =>
+    fetcher('/api/churn/reactivation-prompt', { method: 'POST', body: JSON.stringify({ leadId }) }),
+
+  // Conta Azul Integration Settings
+  getContaAzulConfig: () => fetcher('/api/settings/integrations/conta-azul'),
+  saveContaAzulConfig: (data: any) =>
+    fetcher('/api/settings/integrations/conta-azul', { method: 'POST', body: JSON.stringify(data) }),
+  testContaAzulConnection: (data: any) =>
+    fetcher('/api/settings/integrations/conta-azul/test', { method: 'POST', body: JSON.stringify(data) })
 };
+

@@ -56,7 +56,7 @@ export function LeadDrawer() {
 
   if (!isLeadDrawerOpen || !selectedLead) return null;
 
-  const isHumanActive = selectedLead.status === 'em_atendimento_humano' || selectedLead.status === 'EM_ATENDIMENTO';
+  const isHumanActive = (selectedLead.status as string) === 'em_atendimento_humano' || (selectedLead.status as string) === 'EM_ATENDIMENTO';
 
   const handleToggleAI = async () => {
     await toggleLeadAI(selectedLead.id, !isHumanActive);

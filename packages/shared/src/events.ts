@@ -27,7 +27,13 @@ export enum WSEventType {
 
   // Billing events
   BILLING_PAYMENT_APPROVED = 'billing:payment:approved',
-  BILLING_PAYMENT_FAILED = 'billing:payment:failed'
+  BILLING_PAYMENT_FAILED = 'billing:payment:failed',
+
+  // Order & Inventory events
+  ORDER_CREATED = 'order:created',
+  ORDER_STATUS_CHANGED = 'order:status:changed',
+  STOCK_UPDATED = 'stock:updated',
+  CONTA_AZUL_SYNCED = 'conta_azul:synced'
 }
 
 export interface WSEventPayload<T = any> {

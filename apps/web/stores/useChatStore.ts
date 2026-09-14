@@ -83,7 +83,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       
       // Auto-select first conversation if none selected
       const currentSelected = get().selectedLeadId;
-      if (convs.length > 0 && (!currentSelected || !convs.some(c => c.leadId === currentSelected))) {
+      if (convs.length > 0 && (!currentSelected || !convs.some((c: any) => c.leadId === currentSelected))) {
         get().selectConversation(convs[0].leadId);
       }
     } catch (err) {

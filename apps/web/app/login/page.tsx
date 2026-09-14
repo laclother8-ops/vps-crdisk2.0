@@ -63,6 +63,7 @@ function LoginForm() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('crdisk_user_role', res.user?.role || 'superadmin');
         localStorage.setItem('crdisk_user_name', res.user?.name || 'Administrador');
+        if (res.user?.id) localStorage.setItem('crdisk_user_id', res.user.id);
         localStorage.setItem('crdisk_active_workspace_id', res.workspace?.id || res.user?.workspaceId || '11111111-1111-1111-1111-111111111111');
         localStorage.setItem('crdisk_active_workspace_name', res.workspace?.name || 'CRDISK Enterprise');
         localStorage.removeItem('crdisk_impersonating');

@@ -119,18 +119,10 @@ export default function PlanSelectionPage() {
 
     // 1. Real-time WebSocket connection for instant unlock
     const ws = connectWebSocket();
-    const handleWsMessage = (e: MessageEvent) => {
-      try {
-        const data = JSON.parse(e.data);
-        if (data.type === 'billing:payment:approved' || data.event === 'billing:payment:approved') {
-          console.log('⚡ [Real-time] Payment approved via WebSocket broadcast!');
-          handleUnlocked();
-        }
-      } catch (err) {
-        // Ignore
-      }
-    };
-    ws.addEventListener('message', handleWsMessage);
+    const unsubscribe = ws.on('billing:payment:approved', () => {
+      console.log('⚡ [Real-time] Payment approved via WebSocket broadcast!');
+      handleUnlocked();
+    });
 
     // 2. Lightweight Polling every 3 seconds
     const interval = setInterval(() => {
@@ -139,7 +131,7 @@ export default function PlanSelectionPage() {
 
     return () => {
       clearInterval(interval);
-      ws.removeEventListener('message', handleWsMessage);
+      unsubscribe();
     };
   }, []);
 
