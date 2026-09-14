@@ -46,8 +46,9 @@ export default function MatrixRainBackground({
     if (!ctx) return;
 
     let animationFrameId: number;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let dpr = 1;
 
     // Matrix characters: Katakana, Numbers, Latin and Tech Symbols
     const matrixChars =
@@ -58,8 +59,14 @@ export default function MatrixRainBackground({
     let streams: DropStream[] = [];
 
     const initStreams = () => {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
       streams = [];
 
       const colSpacing = 20;
@@ -121,14 +128,37 @@ export default function MatrixRainBackground({
       mousePos.current.targetY = (e.clientY / innerHeight - 0.5) * 2;
     };
 
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!interactive || !e.touches[0]) return;
+      const touch = e.touches[0];
+      const { innerWidth, innerHeight } = window;
+      mousePos.current.targetX = (touch.clientX / innerWidth - 0.5) * 2;
+      mousePos.current.targetY = (touch.clientY / innerHeight - 0.5) * 2;
+    };
+
+    let isVisible = true;
+    const handleVisibilityChange = () => {
+      isVisible = !document.hidden;
+      if (isVisible) {
+        lastTime = performance.now();
+      }
+    };
+
     window.addEventListener('resize', handleResize);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     if (interactive) {
       window.addEventListener('mousemove', handleMouseMove, { passive: true });
+      window.addEventListener('touchmove', handleTouchMove, { passive: true });
     }
 
     let lastTime = performance.now();
 
     const render = (time: number) => {
+      if (!isVisible) {
+        animationFrameId = requestAnimationFrame(render);
+        return;
+      }
+
       const delta = Math.min((time - lastTime) / 1000, 0.1);
       lastTime = time;
 
@@ -234,8 +264,10 @@ export default function MatrixRainBackground({
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (interactive) {
         window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('touchmove', handleTouchMove);
       }
     };
   }, [interactive]);

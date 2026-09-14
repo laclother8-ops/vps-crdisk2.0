@@ -1,6 +1,7 @@
 import { SAAS_PLANS, CreateCheckoutInput, CheckoutSessionResult, PaymentProvider } from './billing.types.js';
 import { workspaceService } from '../workspaces/workspace.service.js';
 import { WebSocketGateway } from '../../websocket/ws.gateway.js';
+import { WSEventType } from '@omnicrm/shared';
 
 class BillingService {
   private defaultProvider: PaymentProvider = 
@@ -127,7 +128,7 @@ class BillingService {
 
       // Broadcast real-time unlock event via WebSocket Gateway
       try {
-        WebSocketGateway.getInstance().broadcast('billing:payment:approved', {
+        WebSocketGateway.getInstance().broadcast(WSEventType.BILLING_PAYMENT_APPROVED, {
           workspaceId,
           planId,
           subscriptionStatus: 'active',
@@ -149,7 +150,7 @@ class BillingService {
       });
 
       try {
-        WebSocketGateway.getInstance().broadcast('billing:payment:failed', {
+        WebSocketGateway.getInstance().broadcast(WSEventType.BILLING_PAYMENT_FAILED, {
           workspaceId,
           subscriptionStatus: 'past_due',
           message: 'Pagamento pendente ou cancelado.'

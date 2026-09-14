@@ -23,7 +23,11 @@ export enum WSEventType {
   AI_FOLLOWUP_TRIGGERED = 'ai:followup:triggered',
   AI_AGENT_THINKING = 'ai:agent:thinking',
   AI_TOOL_EXECUTED = 'ai:tool:executed',
-  AGENT_TAKEOVER_ALERT = 'agent:takeover:alert'
+  AGENT_TAKEOVER_ALERT = 'agent:takeover:alert',
+
+  // Billing events
+  BILLING_PAYMENT_APPROVED = 'billing:payment:approved',
+  BILLING_PAYMENT_FAILED = 'billing:payment:failed'
 }
 
 export interface WSEventPayload<T = any> {

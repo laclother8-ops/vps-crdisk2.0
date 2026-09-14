@@ -12,6 +12,7 @@ import {
   ArrowRight,
   ShieldCheck
 } from 'lucide-react';
+import MatrixRainBackground from '@/components/ui/MatrixRainBackground';
 
 function LoginForm() {
   const router = useRouter();
@@ -99,6 +100,9 @@ function LoginForm() {
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 bg-[#070908] overflow-hidden selection:bg-[#57EF40]/25 selection:text-[#57EF40]">
+      {/* 3D Matrix Digital Rain Background */}
+      <MatrixRainBackground opacity={0.35} interactive={true} />
+
       {/* Ambient background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#57EF40]/[0.03] rounded-full blur-[140px] pointer-events-none" />
 

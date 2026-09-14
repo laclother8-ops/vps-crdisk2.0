@@ -120,6 +120,62 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   /**
+   * POST /api/auth/register
+   * Public onboarding registration for new workspace & admin user
+   */
+  app.post('/register', async (req, reply) => {
+    try {
+      const { companyName, name, email, password, plan } = req.body as any || {};
+
+      if (!companyName || !name || !email || !password) {
+        return reply.status(400).send({ error: 'Todos os campos obrigatórios devem ser preenchidos.' });
+      }
+
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanCompany = companyName.trim();
+      const slug = cleanCompany
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || `empresa-${Date.now().toString(36)}`;
+
+      const { workspace, adminUser } = await workspaceService.createWorkspace({
+        name: cleanCompany,
+        slug,
+        plan: plan || 'pro',
+        adminName: name.trim(),
+        adminEmail: cleanEmail,
+        adminPassword: password.trim()
+      });
+
+      return reply.status(201).send({
+        success: true,
+        token: `token-${adminUser.id}-${Date.now()}`,
+        user: {
+          id: adminUser.id,
+          name: adminUser.name,
+          email: adminUser.email,
+          role: adminUser.role,
+          workspaceId: workspace.id,
+          status: adminUser.status
+        },
+        workspace: {
+          id: workspace.id,
+          name: workspace.name,
+          slug: workspace.slug,
+          subscriptionPlan: workspace.subscriptionPlan,
+          subscriptionStatus: workspace.subscriptionStatus,
+          trialEndsAt: workspace.trialEndsAt
+        }
+      });
+    } catch (err: any) {
+      req.log.error({ err }, 'Registration error');
+      return reply.status(400).send({ error: err.message || 'Erro ao realizar cadastro' });
+    }
+  });
+
+  /**
    * GET /api/auth/me
    * Get current authenticated user and workspace context (with impersonation awareness)
    */
